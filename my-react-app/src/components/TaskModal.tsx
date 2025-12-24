@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Task, SubTask } from '../types';
 import { TaskStatus, TaskPriority, Mood } from '../types';
-import { PRIORITY_LABELS } from '../constants';
+import { PRIORITY_LABELS, MOOD_CONFIG } from '../constants';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -118,6 +118,27 @@ const TaskModal: React.FC<TaskModalProps> = ({
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Tâm trạng liên kết</label>
+            <div className="grid grid-cols-4 gap-2">
+              {(Object.keys(Mood) as Mood[]).map((m) => {
+                const config = MOOD_CONFIG[m];
+                const isSelected = formData.mood === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, mood: m })}
+                    className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${isSelected ? `${config.bg} ${config.border} border-current` : 'bg-slate-50 dark:bg-slate-800/50 border-transparent text-slate-400'}`}
+                  >
+                    <i className={`fas ${config.icon} ${isSelected ? config.color : ''} text-lg`}></i>
+                    <span className="text-[8px] font-bold mt-1">{config.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

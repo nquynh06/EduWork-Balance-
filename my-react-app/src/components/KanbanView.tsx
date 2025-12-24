@@ -1,18 +1,19 @@
 
 import React, { useState } from 'react';
 import type { Task } from '../types';
-import { TaskStatus, TaskPriority } from '../types';
+import { TaskStatus, TaskPriority, Mood } from '../types';
 import { STATUS_LABELS, STATUS_UI_CONFIG, MOOD_CONFIG } from '../constants';
 
 interface KanbanViewProps {
   tasks: Task[];
+  currentUserMood: Mood | null;
   onUpdateStatus: (taskId: string, newStatus: TaskStatus, targetTaskId?: string) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onAddTask: (status: TaskStatus) => void;
 }
 
-const KanbanView: React.FC<KanbanViewProps> = ({ tasks, onUpdateStatus, onEditTask, onAddTask }) => {
+const KanbanView: React.FC<KanbanViewProps> = ({ tasks, currentUserMood, onUpdateStatus, onEditTask, onAddTask }) => {
   const columns: TaskStatus[] = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.DONE];
   const [, setDraggedTaskId] = useState<string | null>(null);
   const [activeColumn, setActiveColumn] = useState<TaskStatus | null>(null);
@@ -79,6 +80,17 @@ const KanbanView: React.FC<KanbanViewProps> = ({ tasks, onUpdateStatus, onEditTa
                 {columnTasks.map((task) => {
                   const progress = getProgress(task);
                   const moodInfo = MOOD_CONFIG[task.mood];
+                  
+                  // Kiểm tra trùng khớp với tâm trạng chung
+                  const isMatchGlobalMood = currentUserMood === task.mood;
+
+                  // CSS Colors có điều kiện: Nếu không khớp mood thì hiện trắng/đen bình thường
+                  const cardBg = isMatchGlobalMood 
+                    ? moodInfo.bg 
+                    : 'bg-white dark:bg-slate-900';
+                  const cardBorder = isMatchGlobalMood 
+                    ? moodInfo.border 
+                    : 'border-slate-100 dark:border-slate-800';
 
                   return (
                     <div 
@@ -87,30 +99,39 @@ const KanbanView: React.FC<KanbanViewProps> = ({ tasks, onUpdateStatus, onEditTa
                       onDragStart={(e) => onDragStart(e, task.id)}
                       onDragEnd={onDragEnd}
                       onClick={() => onEditTask(task)}
-                      className={`group bg-white dark:bg-slate-900 p-1.5 md:p-4 rounded-lg md:rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-indigo-200 transition-all cursor-grab active:cursor-grabbing relative ${task.priority === TaskPriority.HIGH ? 'border-l-2 border-l-rose-500' : task.priority === TaskPriority.MEDIUM ? 'border-l-2 border-l-amber-500' : 'border-l-2 border-l-blue-500'}`}
+                      className={`group p-1.5 md:p-4 rounded-lg md:rounded-2xl shadow-sm border transition-all cursor-grab active:cursor-grabbing relative ${cardBg} ${cardBorder} hover:border-indigo-300 dark:hover:border-indigo-700 ${task.priority === TaskPriority.HIGH ? 'ring-1 ring-rose-500/20' : ''} ${isMatchGlobalMood ? 'shadow-md dark:shadow-indigo-500/5' : ''}`}
                     >
-                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-[9px] md:text-sm leading-tight mb-1 md:mb-3 line-clamp-2">
+                      {/* Priority Indicator - Luôn hiển thị để phân biệt độ quan trọng */}
+                      <div className={`absolute top-0 left-0 bottom-0 w-1 rounded-l-full ${task.priority === TaskPriority.HIGH ? 'bg-rose-500' : task.priority === TaskPriority.MEDIUM ? 'bg-amber-500' : 'bg-blue-500'}`}></div>
+
+                      <h4 className={`font-bold text-[9px] md:text-sm leading-tight mb-1 md:mb-3 line-clamp-2 ${isMatchGlobalMood ? 'text-slate-900 dark:text-white' : 'text-slate-800 dark:text-slate-300'}`}>
                         {task.title}
                       </h4>
                       
                       <div className="flex items-center gap-1 mb-1 md:mb-3">
-                        <span className={`text-[7px] md:text-[8px] font-black uppercase px-1 py-0.5 rounded ${moodInfo.bg} dark:bg-slate-800 ${moodInfo.color} truncate`}>
+                        <span className={`flex items-center gap-1 text-[7px] md:text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full ${isMatchGlobalMood ? 'bg-white/80 dark:bg-white/10' : 'bg-slate-100 dark:bg-slate-800'} ${moodInfo.color} truncate`}>
                           <i className={`fas ${moodInfo.icon}`}></i>
+                          <span className="hidden md:inline">{moodInfo.label}</span>
                         </span>
                       </div>
                       
                       {task.subTasks.length > 0 && (
                         <div className="mb-1 md:mb-3">
-                          <div className="w-full bg-slate-100 dark:bg-slate-800 h-0.5 md:h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-indigo-500 h-full transition-all" style={{ width: `${progress}%` }}></div>
+                          <div className={`w-full ${isMatchGlobalMood ? 'bg-white/40' : 'bg-slate-100 dark:bg-slate-800'} h-0.5 md:h-1.5 rounded-full overflow-hidden`}>
+                            <div className={`${isMatchGlobalMood ? 'bg-current opacity-80' : 'bg-indigo-500'} h-full transition-all`} style={{ width: `${progress}%` }}></div>
                           </div>
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between mt-1 pt-1 border-t border-slate-50 dark:border-slate-800/50">
-                        <span className="text-slate-400 text-[7px] md:text-[9px] font-bold">
+                      <div className={`flex items-center justify-between mt-1 pt-1 border-t ${isMatchGlobalMood ? 'border-black/5 dark:border-white/5' : 'border-slate-50 dark:border-slate-800/50'}`}>
+                        <span className={`text-[7px] md:text-[9px] font-bold ${isMatchGlobalMood ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
                           {task.dueDate.split('-').slice(1).join('/')}
                         </span>
+                        {task.subTasks.length > 0 && (
+                          <span className="text-[7px] md:text-[9px] font-bold text-slate-400">
+                            {task.subTasks.filter(s => s.completed).length}/{task.subTasks.length}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

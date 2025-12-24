@@ -2,17 +2,20 @@
 import React, { useMemo } from 'react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, 
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+  BarChart, Bar, YAxis, Tooltip, Legend,
+  XAxis
 } from 'recharts';
-import { type Task, TaskStatus } from '../types';
+import { type Task, TaskStatus, Mood } from '../types';
+import { MOOD_CONFIG } from '../constants';
 
 interface AnalysisViewProps {
   tasks: Task[];
+  currentUserMood: Mood | null;
   isDarkMode?: boolean;
   onAddTask?: (eisenhower: {isUrgent: boolean, isImportant: boolean}) => void;
 }
 
-const AnalysisView: React.FC<AnalysisViewProps> = ({ tasks, isDarkMode, onAddTask }) => {
+const AnalysisView: React.FC<AnalysisViewProps> = ({ tasks, currentUserMood, isDarkMode, onAddTask }) => {
   const chartTextColor = isDarkMode ? '#94a3b8' : '#64748b';
 
   const quadrants = useMemo(() => [
@@ -85,9 +88,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ tasks, isDarkMode, onAddTas
   }, [tasks]);
 
   const comparisonData = useMemo(() => {
-    const dates = Array.from(new Set(tasks.map(t => t.dueDate))).sort();
+    const dates = Array.from(new Set(tasks.map(t => t.dueDate))).sort() as string[];
     const displayDates = dates.slice(-5);
-    return displayDates.map(date => {
+    return displayDates.map((date: string) => {
       const dayTasks = tasks.filter(t => t.dueDate === date);
       const completed = dayTasks.filter(t => t.status === TaskStatus.DONE).length;
       return {
@@ -138,9 +141,17 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ tasks, isDarkMode, onAddTas
 
       {/* Eisenhower Matrix Section */}
       <div className="bg-white dark:bg-slate-900 p-4 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ma trận Eisenhower</h3>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Phân tích mức độ ưu tiên</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ma trận Eisenhower</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Phân tích mức độ ưu tiên nhiệm vụ</p>
+          </div>
+          {currentUserMood && (
+             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-900/30">
+                <i className={`fas ${MOOD_CONFIG[currentUserMood].icon} ${MOOD_CONFIG[currentUserMood].color} text-xs`}></i>
+                <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">Tối ưu cho {MOOD_CONFIG[currentUserMood].label}</span>
+             </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -163,14 +174,20 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ tasks, isDarkMode, onAddTas
 
               <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-1">
                 {q.tasks.length > 0 ? (
-                  q.tasks.map(task => (
-                    <div key={task.id} className="flex items-start gap-2 text-[10px] md:text-xs text-slate-700 dark:text-slate-300 group">
-                       <i className={`fas fa-circle mt-1 ${q.accentColor} text-[4px] shrink-0`}></i>
-                       <span className="flex-1 leading-tight font-medium line-clamp-2">
-                         {task.title}
-                       </span>
-                    </div>
-                  ))
+                  q.tasks.map(task => {
+                    const isMatchMood = task.mood === currentUserMood;
+                    return (
+                      <div 
+                        key={task.id} 
+                        className={`flex items-start gap-2 text-[10px] md:text-xs p-1.5 rounded-lg transition-colors ${isMatchMood ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-indigo-500/20' : 'text-slate-700 dark:text-slate-300'} group`}
+                      >
+                         <i className={`fas ${isMatchMood ? MOOD_CONFIG[task.mood].icon : 'fa-circle'} mt-1 ${isMatchMood ? MOOD_CONFIG[task.mood].color : q.accentColor} ${isMatchMood ? 'text-[8px]' : 'text-[4px]'} shrink-0`}></i>
+                         <span className={`flex-1 leading-tight line-clamp-2 ${isMatchMood ? 'font-bold text-slate-900 dark:text-slate-100' : 'font-medium'}`}>
+                           {task.title}
+                         </span>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="h-full flex items-center justify-center opacity-10">
                     <i className="fas fa-check-circle text-4xl"></i>

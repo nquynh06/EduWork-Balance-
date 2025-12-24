@@ -215,7 +215,7 @@ const App: React.FC = () => {
 
   const handleMoodSelect = (mood: Mood) => {
     setData(prev => ({ ...prev, userMood: mood }));
-    setFilterMood(mood);
+    setFilterMood('ALL'); 
   };
 
   const activeProject = data.projects.find(p => p.id === data.activeProjectId) || null;
@@ -261,6 +261,7 @@ const App: React.FC = () => {
         return (
           <KanbanView 
             tasks={filteredTasks} 
+            currentUserMood={data.userMood}
             onUpdateStatus={handleMoveTask} 
             onEditTask={handleEditTask}
             onDeleteTask={handleDeleteTask}
@@ -270,11 +271,11 @@ const App: React.FC = () => {
       case 'TABLE':
         return (
           <TableView 
-            tasks={filteredTasks} 
+            tasks={filteredTasks}
             onUpdateStatus={handleUpdateStatus}
             onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-          />
+            onDeleteTask={handleDeleteTask} 
+            currentUserMood={null}          />
         );
       case 'CALENDAR':
         return (
@@ -287,6 +288,7 @@ const App: React.FC = () => {
         return (
           <AnalysisView 
             tasks={filteredTasks} 
+            currentUserMood={data.userMood}
             isDarkMode={isDarkMode} 
             onAddTask={(e) => handleAddTask(TaskStatus.TODO, e)}
           />
